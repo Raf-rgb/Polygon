@@ -21,38 +21,19 @@ def p5js_sketch(sketch_file, js_params=None, height=500, width=500):
     sketch += open(sketch_file, 'r', encoding='utf-8').read()
     sketch += '</script>'
     components.html(sketch, height=height + 10, width=width + 10)
+    print(sketch)
 
-
-def file_selector(folder_path='.'):
-    filenames = os.listdir(folder_path)
-    selected_filename = st.selectbox('Select a file', filenames)
-    return os.path.join(folder_path, selected_filename)
-
-def get_image_data(url):
-    response = requests.get(url)
-    img_data = base64.b64encode(response.content).decode('utf-8')
+def get_image_data(uploaded_file):
+    img_data = base64.b64encode(uploaded_file.read()).decode('utf-8')
     return f'data:image/png;base64,{img_data}'
 
-def read_image_from_data(data):
-    base64_data = data.split(',')[1]
-    img_data = base64.b64decode(base64_data)
-    img_array = np.frombuffer(img_data, np.uint8)
-    img = cv.imdecode(img_array, cv.IMREAD_GRAYSCALE)
-    return img
+uploaded_file = st.file_uploader("Choose a file")
 
-url = st.text_input('Enter a URL', '')
-
-if url != '':
-    img_data = get_image_data(url)
-    st.write('You entered `%s`' % url)
-
-if st.button('Process URL'):
-    img_path = img_data
-    img = read_image_from_data(img_path)
-    print(img.shape)
+if st.button('Process image') and uploaded_file is not None:
+    img_path = get_image_data(uploaded_file)
     spacing_x = 60
-    scale = 0.4
-    width, height = img.shape[1] * scale + spacing_x, img.shape[0] * scale
+    scale = 0.8
+    width, height = 700, 500
     background = 255
 
     st.header("p5.js sketch implementation")
