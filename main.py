@@ -27,13 +27,22 @@ def get_image_data(uploaded_file):
     img_data = base64.b64encode(uploaded_file.read()).decode('utf-8')
     return f'data:image/png;base64,{img_data}'
 
+def read_image_from_data(data):
+    base64_data = data.split(',')[1]
+    img_data = base64.b64decode(base64_data)
+    img_array = np.frombuffer(img_data, np.uint8)
+    img = cv.imdecode(img_array, cv.IMREAD_GRAYSCALE)
+    return img
+
 uploaded_file = st.file_uploader("Choose a file")
+
+scale = st.slider('Select a scale value', min_value=0.0, max_value=1.0, value=0.9)
 
 if st.button('Process image') and uploaded_file is not None:
     img_path = get_image_data(uploaded_file)
+    img = read_image_from_data(img_path)
     spacing_x = 60
-    scale = 0.8
-    width, height = 700, 500
+    width, height = img.shape[1] * scale + spacing_x, img.shape[0] * scale
     background = 255
 
     st.header("p5.js sketch implementation")
