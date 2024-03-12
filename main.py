@@ -41,7 +41,7 @@ scale = st.slider('Select a scale value', min_value=0.0, max_value=1.0, value=0.
 if st.button('Process image') and uploaded_file is not None:
     img_path = get_image_data(uploaded_file)
     img = read_image_from_data(img_path)
-    spacing_x = 60
+    spacing_x = 80
     width, height = img.shape[1] * scale + spacing_x, img.shape[0] * scale
     background = 255
 
