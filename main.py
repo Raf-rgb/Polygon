@@ -36,7 +36,7 @@ def read_image_from_data(data):
 
 uploaded_file = st.file_uploader("Choose a file")
 
-scale = st.slider('Select a scale value', min_value=0.0, max_value=1.0, value=0.9)
+scale = st.slider('Select a scale value', min_value=0.0, max_value=2.0, value=1.0)
 
 if st.button('Process image') and uploaded_file is not None:
     img_path = get_image_data(uploaded_file)
