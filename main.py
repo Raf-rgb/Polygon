@@ -45,7 +45,7 @@ if st.button('Process image') and uploaded_file is not None:
     width, height = img.shape[1] * scale + spacing_x, img.shape[0] * scale
     background = 255
 
-    st.header("p5.js sketch implementation")
+    st.header("Polygon Sketch Tool")
     p5js_sketch(
         sketch_file="sketch.js",
         js_params=f'const BACKGROUND_COLOR={background}; const IMG_PATH="{img_path}"; const SPACING_X={spacing_x}; const SCALE={scale};',
