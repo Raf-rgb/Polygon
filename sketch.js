@@ -163,7 +163,7 @@ function mouseReleased() {
 function savePolygons() {  
     let normalized_points = [];
     
-    for(let i = 0; i < points.length - 2; i++) {
+    for(let i = 0; i < points.length; i++) {
       let p = points[i];
 
       let new_x = round(map(p.x, 0, img.width, 0, 1), 2);
