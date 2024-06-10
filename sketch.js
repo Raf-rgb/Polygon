@@ -1,71 +1,86 @@
 let img;
-//let scale;
-let points;
-let vertices;
-let vertex_selected_index;
-let vertex_size;
-let isDrawing;
-let conecting_state;
 
-let select_button;
-let pen_button;
-let clear_button;
-let save_button;
+//States
+let polygons;
+let currentPoly;
+let prev;
+let isMovingVertex;
+
+let colors = [
+  "#804674",
+  "#FF5F00",
+  "#5755FE",
+  "#FF3EA5",
+  "#45CFDD",
+  "#3CCF4E"
+]
+
+let state;
+
+//Buttons
+let pen_btn;
+let select_btn;
+let clear_btn;
+let save_btn;
 let color_picker;
 
 function preload() {
-  img = loadImage(IMG_PATH); // Asegúrate de reemplazar con la ruta de tu imagen
+  img = loadImage(IMG_PATH);
   init();
 }
 
 function init() {
-    //scale = 0.5;
-    points = [];
-    vertices = [];
-    vertex_selected_index = null;
-    vertex_size = 5; 
-    //SPACING_X = 60;
+  polygons = [];
+  state = "select";
+  prev = [];
 
-    isDrawing = false;
-    conecting_state = false;
+  currentPoly = null;
+  isMovingVertex = false;
 
-    select_button = createButton('Select');
-    pen_button = createButton('Pen');
-    clear_button = createButton('Clear');
-    save_button = createButton('Save');
-    color_picker = createColorPicker('deeppink');
+  pen_btn = createButton("Pencil");
+  select_btn = createButton("Select");
+  clear_btn = createButton("clear");
+  save_btn = createButton("save");
+  color_picker = createColorPicker('deeppink');
 
-    select_button.position(10, 20);
-    pen_button.position(10, 50);
-    clear_button.position(10, 80);
-    save_button.position(10, 110);
-    color_picker.position(10, 200);
+  select_btn.position(0, 10);
+  pen_btn.position(0, 35);
+  clear_btn.position(0, 60);
+  save_btn.position(0, 85);
+  color_picker.position(0, 200);
 
-    select_button.mousePressed(() => {
-        cursor(ARROW);
-        isDrawing = false;
-        conecting_state = false;
-    });
-
-    pen_button.mousePressed(() => {
-        cursor(CROSS);
-        isDrawing = true;
-        conecting_state = false;
-    });
-
-    clear_button.mousePressed(() => {
-        init();
-    });
-
-    save_button.mousePressed(() => {
-        savePolygons();
-    });
+  select_btn.mousePressed(() => state = "select");
+  pen_btn.mousePressed(createPoly);
+  clear_btn.mousePressed(() => {
+    init();
+  });
+  save_btn.mousePressed(() => {
+    savePolygons();
+  });
 }
 
 function setup() {
   createCanvas(img.width * SCALE + SPACING_X, img.height * SCALE);
   img.resize(img.width * SCALE, img.height * SCALE);
-  image(img, 0, 0); // Dibuja la imagen de fondo
+  image(img, 0, 0);
+
+  if(PREV_POLYGONS != undefined) {
+    for(let i = 0; i < PREV_POLYGONS["polygons"].length; i++) {
+      let coords = PREV_POLYGONS["polygons"][i];
+      polygons.push(new Polygon(colors[int(random(colors.length))], SPACING_X));
+
+      currentPoly = polygons[polygons.length - 1];
+      for(let j = 0; j < coords.length - 1; j+=2) {
+        let x = coords[j] * (img.width * SCALE);
+        let y = coords[j + 1] * (img.height * SCALE);
+        
+        currentPoly.addVertex(x, y); 
+      }
+      currentPoly.isClosed = true;
+    }
+
+    PREV_POLYGONS = undefined;
+  }
 }
 
 function draw() {
@@ -73,105 +88,218 @@ function draw() {
   translate(SPACING_X, 0);
   image(img, 0, 0);
 
-  noFill();
-  strokeWeight(2);
-  stroke(color_picker.value());
-  
-  // Se dibujan los vertices de poligono
-  for (let i = 0; i < vertices.length; i++) {
-    let v = vertices[i].position;
-    ellipse(v.x, v.y, vertex_size * 2); // Dibuja el punto de control
-  }
-  
-  // Se dibujan las aristas del poligono
-  for (let i = 0; i < points.length - 1; i++) {
-    let p1 = points[i];
-    let p2 = points[i + 1];
-   
-    line(p1.x, p1.y, p2.x, p2.y);
-  }
+  if (state == "drawing")
+    cursor(CROSS);
+  else
+    cursor(ARROW);
 
-  if(conecting_state && isDrawing) line(points[points.length - 1].x, points[points.length -1].y, mouseX - SPACING_X, mouseY);
+  if (polygons.length > 0) {
+    for (let i = 0; i < polygons.length; i++) {
+      let poly = polygons[i];
+      poly.display(state);
+    }
+  }
+}
+
+function createPoly() {
+  polygons.push(new Polygon(color_picker.value(), SPACING_X, img.width, img.height));
+  currentPoly = polygons[polygons.length - 1];
+  state = "drawing";
 }
 
 function mousePressed() {
-  // Comprobar si se hace clic cerca de un punto existente para seleccionarlo
-  for (let i = 0; i < vertices.length; i++) {
-    let vertex = vertices[i];
-    let vertex_position = vertex.position;
-    
-    if (dist(mouseX - SPACING_X, mouseY, vertex_position.x, vertex_position.y) < vertex_size) {
+  if (state == "drawing" && mouseX - SPACING_X > 0) {
+    let x = constrain(mouseX - SPACING_X, 0, img.width);
+    let y = constrain(mouseY, 0, img.height);
 
-      if(isDrawing) {
-        points.push(createVector(vertex_position.x, vertex_position.y));
-        vertex.indices.push(points.length - 1);
+    currentPoly.addVertex(x, y);
 
-        conecting_state = true;
-      } else {
-        vertex_selected_index = i;
-        isOverVertex = true;
-      }
-      
-      return;
+    if (currentPoly.isClosed) { 
+      state = "select";
+    }
+  } else {
+    if (currentPoly != null && !isMovingVertex) {
+      currentPoly.handleVertexSelection();
     }
   }
 
-  let x = constrain(mouseX - SPACING_X, 0, img.width);
-  let y = constrain(mouseY, 0, img.height);
+  if (currentPoly != null) {
+    for (let i = polygons.length - 1; i >= 0; i--) {
+      let poly = polygons[i];
 
-  // Si no se seleccionó ningún punto, crea uno nuevo
-  if(mouseX - SPACING_X > 0 && isDrawing) {
-    points.push(createVector(x, y));
-    vertices.push({ 
-      position: createVector(x, y), 
-      indices: [points.length - 1]
-    });
-
-    conecting_state = true;
+      if (poly.handleSelection()) {
+        currentPoly = polygons[i];
+        break;
+      }
+    }
   }
-  
 }
 
 function mouseDragged() {
-  // Si hay un punto seleccionado, actualiza su posición
-  if(vertex_selected_index != null) {
-    print('moviendo vertice {'+ vertex_selected_index + '}');
-    let vertex_selected = vertices[vertex_selected_index];
-    print(vertex_selected);
-    
-    for(let i = 0; i < vertex_selected.indices.length; i++) {
-      let index = vertex_selected.indices[i];
+  isMovingVertex = true;
+  if (state == "select" && currentPoly != null && currentPoly.vertexSelected != null) {
+    let x = constrain(mouseX - SPACING_X, 0, img.width);
+    let y = constrain(mouseY, 0, height);
 
-      let x = constrain(mouseX - SPACING_X, 0, img.width);
-      let y = constrain(mouseY, 0, img.height);
-
-      points[index].x = x;
-      points[index].y = y;
-      vertex_selected.position.x = x;
-      vertex_selected.position.y = y;
-      
-      print(index);
-    }
+    currentPoly.moveVertex(x, y);
   }
 }
 
 function mouseReleased() {
-  // Al soltar el botón del mouse, deselecciona cualquier punto
-  vertex_selected_index = null;
+  isMovingVertex = false;
+
+  if (state == "select" && currentPoly != null && currentPoly.vertexSelected != null) {
+    currentPoly.vertexSelected = null;
+  }
 }
 
-function savePolygons() {  
-    let normalized_points = [];
-    
-    for(let i = 0; i < points.length; i++) {
-      let p = points[i];
-
-      let new_x = round(map(p.x, 0, img.width, 0, 1), 2);
-      let new_y = round(map(p.y, 0, img.height, 0, 1), 2);
-
-      normalized_points.push(new_x);
-      normalized_points.push(new_y);
+function keyPressed() {
+  if (keyCode == BACKSPACE) {
+    if (currentPoly != null) {
+      polygons = polygons.filter(poly => poly != currentPoly);
     }
-    
-    saveJSON({ points: normalized_points }, 'polygons.json');
+  }
+}
+
+
+function normalized_points(vertices=[]) {
+  let norm_points = [];
+
+  for(let i = 0; i < vertices.length; i++) {
+    let x = round(map(vertices[i].x, 0, img.width, 0, 1), 2);
+    let y = round(map(vertices[i].y, 0, img.height, 0, 1), 2);
+
+    norm_points.push(x);
+    norm_points.push(y);
+  }
+
+  return norm_points;
+}
+
+function savePolygons() {
+  let coords = [];
+
+  if(polygons.length > 0) {
+    for (let i = 0; i < polygons.length; i++) {
+      let poly = polygons[i];
+      coords.push(normalized_points(poly.vertices));
+    }
+  }
+
+  saveJSON({ polygons: coords }, 'polygons.json');
+}
+
+class Polygon {
+  constructor(c, spacingX) {
+    this.vertices = [];
+    this.spacingX = spacingX;
+    this.c = c;
+    this.s = 5;
+    this.isClosed = false;
+    this.isSelected = false;
+    this.vertexSelected = null;
+  }
+
+  display(state) {
+    if (this.vertices.length > 0) {
+      stroke(this.c);
+      strokeWeight(2);
+      
+      if (state == 'drawing' && !this.isClosed) {
+        let lastVertex = this.vertices[this.vertices.length - 1];
+        noFill();
+      
+        line(mouseX - this.spacingX, mouseY, lastVertex.x, lastVertex.y);
+      } else {
+        fill(red(this.c), green(this.c), blue(this.c), 100);
+      }
+
+      beginShape();
+      for (let i = 0; i < this.vertices.length; i++) {
+        let v = this.vertices[i];
+        vertex(v.x, v.y);
+      }
+      if(this.isClosed)
+        endShape(CLOSE);
+      else
+        endShape();
+
+      if ((!this.isClosed || this.isSelected)) {
+        this.displayVertices();
+      }
+    }
+  }
+
+  displayVertices() {
+    noFill();
+
+    for (let i = 0; i < this.vertices.length; i++)
+      ellipse(this.vertices[i].x, this.vertices[i].y, this.s * 2, this.s * 2);
+  }
+
+  addVertex(x, y) {
+    if (this.vertices.length > 1) {
+      let v = this.vertices[0];
+      let d = dist(x, y, v.x, v.y);
+
+      if (d < this.s) {
+        this.isClosed = true;
+        return;
+      }
+    }
+
+    this.vertices.push(createVector(x, y));
+  }
+
+  moveVertex(x, y) {
+    if (this.vertexSelected != null) {
+      this.vertices[this.vertexSelected].x = x;
+      this.vertices[this.vertexSelected].y = y;
+    }
+  }
+
+  handleVertexSelection(state) {
+    for (let i = 0; i < this.vertices.length; i++) {
+      let v = this.vertices[i];
+      let m = createVector(mouseX - this.spacingX, mouseY);
+
+      let d = dist(v.x, v.y, m.x, m.y);
+
+      if (d <= this.s)
+        this.vertexSelected = i;
+    }
+  }
+
+  handleSelection() {
+    let total_angle = 0;
+
+    for (let i = 0; i < this.vertices.length; i++) {
+      let p1 = this.vertices[i];
+      let p2 = this.vertices[(i + 1) % this.vertices.length];
+      let mouse = createVector(mouseX - this.spacingX, mouseY);
+
+      let a1 = this.angle_between(mouse.x, mouse.y, p1.x, p1.y);
+      let a2 = this.angle_between(mouse.x, mouse.y, p2.x, p2.y);
+
+      let angle_diff = a2 - a1;
+
+      if (angle_diff >= PI)
+        angle_diff -= TWO_PI;
+      else if (angle_diff <= -PI)
+        angle_diff += TWO_PI;
+
+      total_angle += angle_diff;
+    }
+
+    if (abs(total_angle) > PI)
+      this.isSelected = true;
+    else
+      this.isSelected = false;
+
+    return this.isSelected;
+  }
+
+  angle_between(x1, y1, x2, y2) {
+    return atan2(y2 - y1, x2 - x1);
+  }
 }
