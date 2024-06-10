@@ -3,7 +3,6 @@ let img;
 //States
 let polygons;
 let currentPoly;
-let prev;
 let isMovingVertex;
 
 let colors = [
@@ -32,7 +31,6 @@ function preload() {
 function init() {
   polygons = [];
   state = "select";
-  prev = [];
 
   currentPoly = null;
   isMovingVertex = false;
@@ -64,6 +62,14 @@ function setup() {
   img.resize(img.width * SCALE, img.height * SCALE);
   image(img, 0, 0);
 
+  console.log(PREV_POLYGONS);
+}
+
+function draw() {
+  background(BACKGROUND_COLOR);
+  translate(SPACING_X, 0);
+  image(img, 0, 0);
+
   if(PREV_POLYGONS != undefined) {
     for(let i = 0; i < PREV_POLYGONS["polygons"].length; i++) {
       let coords = PREV_POLYGONS["polygons"][i];
@@ -81,12 +87,6 @@ function setup() {
 
     PREV_POLYGONS = undefined;
   }
-}
-
-function draw() {
-  background(BACKGROUND_COLOR);
-  translate(SPACING_X, 0);
-  image(img, 0, 0);
 
   if (state == "drawing")
     cursor(CROSS);
@@ -204,7 +204,7 @@ class Polygon {
     if (this.vertices.length > 0) {
       stroke(this.c);
       strokeWeight(2);
-      
+
       if (state == 'drawing' && !this.isClosed) {
         let lastVertex = this.vertices[this.vertices.length - 1];
         noFill();

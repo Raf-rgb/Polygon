@@ -12,7 +12,7 @@ import numpy as np
 from streamlit_ace import st_ace
 
 if "prev_poly" not in st.session_state:
-    st.session_state["prev_poly"] = {}
+    st.session_state["prev_poly"] = None
 
 def p5js_sketch(sketch_file, js_params=None, height=500, width=500):
     sketch = '<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.js"></script>'
@@ -62,7 +62,7 @@ if st.button('Process image') and uploaded_file is not None:
     st.header("Polygon Sketch Tool")
     p5js_sketch(
         sketch_file="sketch.js",
-        js_params=f'const BACKGROUND_COLOR={background}; const IMG_PATH="{img_path}"; const SPACING_X={spacing_x}; const SCALE={scale}; PREV_POLYGONS={st.session_state.prev_poly}',
+        js_params=f'const BACKGROUND_COLOR={background}; const IMG_PATH="{img_path}"; const SPACING_X={spacing_x}; const SCALE={scale}; PREV_POLYGONS={st.session_state.prev_poly if st.session_state.prev_poly else "null"};',
         height=height,
         width=width   
     )
