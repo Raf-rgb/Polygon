@@ -77,8 +77,8 @@ function draw() {
 
       currentPoly = polygons[polygons.length - 1];
       for(let j = 0; j < coords.length - 1; j+=2) {
-        let x = coords[j] * (img.width * SCALE);
-        let y = coords[j + 1] * (img.height * SCALE);
+        let x = coords[j] * img.width;
+        let y = coords[j + 1] * img.height;
         
         currentPoly.addVertex(x, y); 
       }
